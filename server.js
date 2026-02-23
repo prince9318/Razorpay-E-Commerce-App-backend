@@ -12,15 +12,7 @@ dotenv.config();
 
 const app = express();
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://razorpay-e-commerce-app.vercel.app/",
-    ],
-    credentials: true,
-  }),
-);
+app.use(cors());
 app.use(express.json());
 
 const mongoUri = process.env.MONGO_URI || "";
