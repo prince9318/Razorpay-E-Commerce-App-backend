@@ -5,7 +5,7 @@ import { auth, admin } from "../middleware/auth.js"
 const router = Router()
 
 router.get("/", async (req, res) => {
-  const { q, min, max } = req.query
+  const { q, min, max, page, limit } = req.query
   const filter = {}
   if (q) {
     filter.title = { $regex: String(q), $options: "i" }
@@ -15,8 +15,28 @@ router.get("/", async (req, res) => {
     if (min) filter.price.$gte = Number(min)
     if (max) filter.price.$lte = Number(max)
   }
-  const items = await Product.find(filter).sort({ createdAt: -1 })
-  res.json(items)
+
+  const requestedPage = Math.max(Number(page) || 1, 1)
+  const requestedLimit = Math.max(Number(limit) || 12, 1)
+  const total = await Product.countDocuments(filter)
+  const totalPages = Math.max(Math.ceil(total / requestedLimit), 1)
+  const currentPage = Math.min(requestedPage, totalPages)
+  const skip = (currentPage - 1) * requestedLimit
+
+  const items = await Product.find(filter)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(requestedLimit)
+
+  res.json({
+    items,
+    total,
+    page: currentPage,
+    limit: requestedLimit,
+    totalPages,
+    hasNextPage: currentPage < totalPages,
+    hasPrevPage: currentPage > 1
+  })
 })
 
 router.get("/:id", async (req, res) => {
